@@ -539,7 +539,7 @@ or [SEIR](http://gabgoh.github.io/COVID/index.html) differential equations model
         
                  
                  
-        st.write(""">### :bug: Report a bug? Enrich data from your country? More ideas? Check the project on Github!""")
+        st.write(""">### :bug: Report a bug? Enrich data from your country? More ideas? Check [the project](https://github.com/myrthings/covid-forecasting) on Github!""")
 
             
         
