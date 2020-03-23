@@ -1,17 +1,10 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Mar 15 18:55:49 2020
-
-@author: Myriam
-"""
-
 import streamlit as st
 import pandas as pd
 import datetime as dt
 import plotly.graph_objects as go
 from math import exp, log
 
+#beds in spain by region
 spain_beds={'Andalucía':21349,
             'Aragón':5254,
             'Asturias':3785,
@@ -79,6 +72,7 @@ def separate_region(country,region):
     
     return data
 
+#function to get the r of a given region
 def get_r(data,column):
     r=round(min(data.loc[(data[column]>0)&(data[column]!=data[column].max()),column].median(),
             data.loc[(data[column]>0)&(data[column]!=data[column].max()),column].mean()),2)
@@ -140,8 +134,8 @@ to prevent a sanitary collapse to be able to take care of all these people. I'm 
 this challenge here. Let's see how some countries/regions are doing! 
 
 '''
-#st.write("[Here](https://medium.com/@myrbarnes) is how this model works.")
 
+#st.write("[Here](https://medium.com/@myrbarnes) is how this model works.")
 
 
 #get the world data
@@ -245,8 +239,6 @@ you can see the distribution of *Confirmed Cases*, *Deaths* and *Recovered* peop
               orientation="h"
           )
       )
-    # Activate tooltip comparison mode  
-    #fig.update_layout(hovermode='x')
     # Add the lines to the chart
     fig.add_trace(ConfTrace)
     fig.add_trace(DeathTrace)
@@ -254,8 +246,8 @@ you can see the distribution of *Confirmed Cases*, *Deaths* and *Recovered* peop
     # Draw the chart
     chart = st.plotly_chart(fig)
     
+    #get the r
     r,days_duplicate=get_r(df,"Change Total")
-    
     
     # Explain the chart
     controlled=(df.index.max()-df["New Cases"].idxmax()).days>=7
@@ -281,7 +273,9 @@ you can see the distribution of *Confirmed Cases*, *Deaths* and *Recovered* peop
         st.write(">### In",region," cases are duplicating every",round(days_duplicate,2),"days with an $R_0$ of",round(r,2),
                  ". The number of cases is still growing")
         
-    ####################################################################
+    ############################################################
+    # SECOND PART: forecast
+    ############################################################
     
     if not terminar:
         
@@ -308,7 +302,7 @@ even restricted movements inside the country. This social distancing is a way to
 """)
         
         
-        #percentage_deaths=st.slider("Select the percentage of deaths: ",min_value=0.5, max_value=10.0,step=0.5,value=2.0)
+        #parameters
         percentage_deaths=1
         date_measures=st.date_input("Date of government measures to stop the virus: ")
         
@@ -332,10 +326,12 @@ even restricted movements inside the country. This social distancing is a way to
         length=len(death_model)
         death_model=forecast_model(death_model,len(df)-length-time_to_measure)
         
+        #phase adjusted model
         latency_model=list(df['New Cases'])[symptom_delay:-1]
         length=len(latency_model)
         latency_model=forecast_model(latency_model,len(df)-length-time_to_measure)
         
+        #real new cases
         new_cases=list(df['New Cases'])[:-1]
         length=len(new_cases)
         new_cases=forecast_model(new_cases,len(df)-length-time_to_measure+symptom_delay)
@@ -382,10 +378,9 @@ even restricted movements inside the country. This social distancing is a way to
         
         #st.line_chart(new_df[['total_cases','total_deaths','total_recovery']])
         
-        
+        #get the beds for spain
         if country=='Spain':
             bed_num=spain_beds[region]
-        
             new_df['current_beds']=bed_num
             #st.line_chart(new_df[['current_cases','bed_needs','current_beds']])
         
@@ -418,6 +413,7 @@ even restricted movements inside the country. This social distancing is a way to
               '<b>Patients with Hospitalization</b>: %{y:.2s} Needs',
             line_shape='spline'
           )
+        # Build the Today indicator
         max_chart=max(new_df['current_cases'].max(),bed_num) if country=='Spain' else new_df['current_cases'].max()
         todayTrace=go.Scatter(
                 x=[df.index.max(),df.index.max()],
@@ -426,7 +422,7 @@ even restricted movements inside the country. This social distancing is a way to
                 line=dict(color='grey',dash='dash'),
                 name='Today')
 
-        
+        #Build the actual beds reference for spain
         if country=='Spain':
             actualBedsTrace = go.Scatter(
                 x=new_df.index[::2], 
@@ -462,34 +458,38 @@ even restricted movements inside the country. This social distancing is a way to
         if country=='Spain':
             fig.add_trace(actualBedsTrace)
         
+        
+        #write the conclusion
         max_beds=round(new_df['bed_needs'].max())
+        max_beds=max_beds if max_beds<1000 else round(max_beds/1000)*1000
         day_max_beds=new_df['bed_needs'].idxmax()
         
         if country=="Spain":
             bed_rate=max_beds/bed_num
             
             if bed_rate>1:
-                st.write(">### The peak beds needed is ",max_beds,
+                st.write(">### The peak beds needed is ~",max_beds,
                  ". It will occur around",day_max_beds,". That's {:0.2%} of the actual number of beds. <span style='color: red'>You will need more beds!</span>".format(bed_rate), unsafe_allow_html=True)
             elif bed_rate>0.5:
-                st.write(">### The peak beds needed is ",max_beds,
+                st.write(">### The peak beds needed is ~",max_beds,
                  ". It will occur around",day_max_beds,". That's {:0.2%} of the actual beds. <span style='color: green'>Great if they can all be used for COVID-19!</span>".format(bed_rate), unsafe_allow_html=True)
             else:
-                st.write(">### The peak beds needed is ",max_beds,
+                st.write(">### The peak beds needed is ~",max_beds,
                  ". It will occur around",day_max_beds,". That's {:0.2%} of the actual beds. <span style='color: green'>This is great!</span>".format(bed_rate), unsafe_allow_html=True)
         else:
             st.write(">### The date of peak necessity will be around",day_max_beds,
-                 ". The healthcare system will need approximately", max_beds," beds. Make sure there are enough :pray:!")
+                 ". The healthcare system will need ~", max_beds," beds. Make sure there are enough :pray:!")
 
         # Draw the chart
         chart = st.plotly_chart(fig)
             
+        # Warning
         st.write(""">:warning: *Note: Forecasting the covid pandemic is a complex problem. Although this model uses real data, assumptions made to forecast are based on Hubei (China) case and do not necessarily
 match the reality for any other country. Take this as an experiment to see how little variations in time can change a lot the scenario for the health system. Don't forget to follow your local
 government health and safety regulations!*""")
         
         
-
+        # Bibliography
         st.write("""### :book: Parameters bibliography
 
 - Percentage of deaths: 1% [*MIDAS Network*](https://github.com/midas-network/COVID-19)
@@ -502,7 +502,7 @@ government health and safety regulations!*""")
 - Number of hospital beds for Spain: data from [Spanish Ministry of health](https://www.mscbs.gob.es/ciudadanos/hospitales.do?tipo=camas)
 """)
         
-        
+        #Math part
         st.write("""### :bar_chart: The math behind it
 I chosed to use sequences and series instead of the [SIR](https://flattenthecurve.herokuapp.com/)
 or [SEIR](http://gabgoh.github.io/COVID/index.html) differential equations models to use the actual experimental data.
@@ -538,7 +538,7 @@ or [SEIR](http://gabgoh.github.io/COVID/index.html) differential equations model
                  ''')
         
                  
-                 
+        # End
         st.write(""">### :bug: Report a bug? Enrich data from your country? More ideas? Check [the project](https://github.com/myrthings/covid-forecasting) on Github!""")
 
             
