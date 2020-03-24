@@ -1,1 +1,1 @@
-web: sh setup.sh && streamlit run server.enableCORS false covid-forecasting.py
+web: sh setup.sh && streamlit run covid-forecasting.py
