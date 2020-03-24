@@ -29,6 +29,8 @@ spain_beds={'Andalucía':21349,
 #function to concatenate world and spanish data
 def improve_data(world,spain):
     world.columns=list(world.columns[:4])+[dt.datetime.strptime(date,"%m/%d/%y").strftime("%d/%m/%Y") for date in world.columns[4:]]
+    spain.columns=list(spain.columns[:2])+[dt.datetime.strptime(date,"%Y-%m-%d").strftime("%d/%m/%Y") for date in spain.columns[2:]]
+    
     
     world['Province/State']=world['Province/State'].fillna('All')
     selected_countries=list(world.loc[world['Province/State']!='All','Country/Region'].sort_values().unique())
