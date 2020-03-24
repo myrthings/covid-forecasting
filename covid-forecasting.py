@@ -82,7 +82,7 @@ def get_r(data,column):
         
 
 #function for forecasting data
-def forecast_model(model,trozo):
+def forecast_model(model,trozo,r):
     length=len(model)
     #trozo=trozo1
     if trozo>0:
@@ -156,20 +156,27 @@ recovered=improve_data(wrecovered,sprecovered).fillna(0)
 
 
 #sidebar
-st.sidebar.markdown("## Select the region of the world :globe_with_meridians: to study :microscope:")
-country=st.sidebar.selectbox("Country/Region: ",['--']+list(confirmed['Country/Region'].sort_values().unique()))
-region=st.sidebar.selectbox("Province/State: ",confirmed.loc[confirmed['Country/Region']==country,'Province/State'].sort_values().unique() if country!='--' else ['--'])
-st.sidebar.markdown("Data is from [here](https://github.com/CSSEGISandData/COVID-19) for the World and from [here](https://github.com/datadista/datasets/tree/master/COVID%2019) for Spain.")
+#st.sidebar.markdown("## Select the region of the world :globe_with_meridians: to study :microscope:")
+#country=st.sidebar.selectbox("Country/Region: ",['--']+list(confirmed['Country/Region'].sort_values().unique()))
+#region=st.sidebar.selectbox("Province/State: ",confirmed.loc[confirmed['Country/Region']==country,'Province/State'].sort_values().unique() if country!='--' else ['--'])
+#st.sidebar.markdown("Data is from [here](https://github.com/CSSEGISandData/COVID-19) for the World and from [here](https://github.com/datadista/datasets/tree/master/COVID%2019) for Spain.")
 
+#no sidebar
+st.markdown("## :point_down: Select the region of the world to study")
+country=st.selectbox("Country/Region: ",['--']+list(confirmed['Country/Region'].sort_values().unique()))
+region=st.selectbox("Province/State: ",confirmed.loc[confirmed['Country/Region']==country,'Province/State'].sort_values().unique() if country!='--' else ['--'])
+st.markdown("*Data is from [here](https://github.com/CSSEGISandData/COVID-19) for the World and from [here](https://github.com/datadista/datasets/tree/master/COVID%2019) for Spain.*")
 
 
 
 #body of the study    
-if country=='--':
+#if country=='--':
     # st.write(':point_left: **Select the country/region on the sidebar to start.**')
-    st.subheader(':point_left: Select the country/region on the sidebar to start.')
+    #st.subheader(':point_left: Select the country/region on the sidebar to start.')
+    #st.subheader(':point_up: Select the country/region on the sidebar to start.')
+    
 
-else:   
+if country!='--':  
     
     ############################################################
     # FIRST PART: actual data
@@ -306,7 +313,6 @@ even restricted movements inside the country. This social distancing is a way to
         percentage_deaths=1
         date_measures=st.date_input("Date of government measures to stop the virus: ")
         
-            
         incubation_period=5
         symptom_to_death=17
         symptom_to_recovery=22
@@ -315,37 +321,41 @@ even restricted movements inside the country. This social distancing is a way to
         recovery_delay=symptom_to_death+incubation_period
         symptom_delay=incubation_period+round(symptom_to_death/2)
         
-        time_to_measure=(df.index.max()-date_measures).days
+        
+        #new r
+        df2=df[df.index<date_measures]
+        r,days_duplicate=get_r(df2,"Change Total")
+        time_to_measure=(df2.index.max()-date_measures).days
         
         #days to forecast
         days_prediction=100
         
         
         #deaths model
-        death_model=list(map(lambda x: x*1/(percentage_deaths/100),list(df['New Deaths'])[death_delay:-1]))
+        death_model=list(map(lambda x: x*1/(percentage_deaths/100),list(df2['New Deaths'])[death_delay:-1]))
         length=len(death_model)
-        death_model=forecast_model(death_model,len(df)-length-time_to_measure)
+        death_model=forecast_model(death_model,len(df2)-length-time_to_measure,r)
         
         #phase adjusted model
-        latency_model=list(df['New Cases'])[symptom_delay:-1]
+        latency_model=list(df2['New Cases'])[symptom_delay:-1]
         length=len(latency_model)
-        latency_model=forecast_model(latency_model,len(df)-length-time_to_measure)
+        latency_model=forecast_model(latency_model,len(df2)-length-time_to_measure,r)
         
         #real new cases
-        new_cases=list(df['New Cases'])[:-1]
+        new_cases=list(df2['New Cases'])[:-1]
         length=len(new_cases)
-        new_cases=forecast_model(new_cases,len(df)-length-time_to_measure+symptom_delay)
+        new_cases=forecast_model(new_cases,len(df2)-length-time_to_measure+symptom_delay,r)
         
         #st.write(len(death_model),len(latency_model),len(new_cases))
         
         
         #new deaths
-        new_deaths1=list(df['New Deaths'])[:-1]
+        new_deaths1=list(df2['New Deaths'])[:-1]
         new_deaths2=[0]*death_delay+list(map(lambda x: (percentage_deaths/100)*x,death_model[:-death_delay]))
         new_deaths=new_deaths1[:-1]+new_deaths2[len(new_deaths1)-1:]
         
         #new recovery for death model
-        new_recov1=list(df['New Recovered'])[:-1]
+        new_recov1=list(df2['New Recovered'])[:-1]
         new_recov2=[0]*recovery_delay+list(map(lambda x: (1-(percentage_deaths/100))*x,death_model[:-recovery_delay]))
         new_recov=new_recov1[:-1]+new_recov2[len(new_recov1)-1:]
         
@@ -355,6 +365,8 @@ even restricted movements inside the country. This social distancing is a way to
         
         #dates
         fechas=list(df.index)+[df.index.max()+dt.timedelta(days=n) for n in range(days_prediction)]
+        
+        #st.write(len(death_model),len(latency_model),len(new_cases),len(new_deaths),len(new_recov),len(fechas))
         
         
         
