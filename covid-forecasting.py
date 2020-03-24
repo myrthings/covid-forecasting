@@ -178,7 +178,10 @@ st.markdown("*Data is from [here](https://github.com/CSSEGISandData/COVID-19) fo
     #st.subheader(':point_up: Select the country/region on the sidebar to start.')
     
 
-if country!='--':  
+if country!='This' and country!='--':
+    st.write('### :dizzy_face: *The app is suffering due to the high traffic, please, came back later* :dizzy_face:')
+
+elif country=='This':  
     
     ############################################################
     # FIRST PART: actual data
