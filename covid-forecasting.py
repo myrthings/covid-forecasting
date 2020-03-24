@@ -305,12 +305,13 @@ people** infected will need hospital care, so we can forecast also the **number 
 """)
         st.write("### :cop: ...and see how they change with social distancing.")
         st.write("""To stop the uncontrolled growth some governments are encouraging the citizens to stay at home and have
-even restricted movements inside the country. This social distancing is a way to stop the virus. Below, you can **experiment with the date in which measures are enforced** to see how earlier or later enformecents affects the **healthcare system**. *Hint: it's really important to enforce them sooner rather than later!* :point_down:. 
+even restricted movements inside the country. This social distancing is a way to stop the virus. Below, you can **experiment with the date in which measures are enforced** to see how earlier or later enformecents affects the **healthcare system**. *Hint: it's really important to enforce them sooner rather than later!*. 
 """)
         
         
         #parameters
         percentage_deaths=1
+        st.markdown("### :point_down: Select the date the government measures start")
         date_measures=st.date_input("Date of government measures to stop the virus: ")
         
         incubation_period=5
