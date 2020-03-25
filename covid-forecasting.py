@@ -72,14 +72,19 @@ def separate_region(country,region):
     data['Change Deaths']=data['Deaths'].pct_change()
     data['Change Total']=data['Confirmed'].pct_change()
     
-    return data
+    return data[:-1]
 
 #function to get the r of a given region
 def get_r(data,column):
-    r=round(min(data.loc[(data[column]>0)&(data[column]!=data[column].max()),column].median(),
-            data.loc[(data[column]>0)&(data[column]!=data[column].max()),column].mean()),2)
-    days_to_duplicate=round(log(2)/log(1+r),2)
-    return 1+r, days_to_duplicate
+    line=data.loc[(data[column]>0)&(data[column]!=data[column].max()),column]
+    #r=min(line.median(),line.mean())
+    r=line.mean()
+    while (r<=0 or r==1) and len(line)>5:
+        st.write(r)
+        line=line[:-1]
+        r=round(min(line.median(),line.mean()),2)
+    days_to_duplicate=round(log(2)/log(1+r),2) if r!=0 else None
+    return round(1+r,2), days_to_duplicate
 
         
 
@@ -137,6 +142,14 @@ this challenge here. Let's see how some countries/regions are doing!
 
 '''
 
+'''
+> :warning: ***"All models are wrong, some are useful" George Box (statician). This model is a simplification
+of how covid-19 can spread in other regions based on what happened in Hubei (Dec-Feb).*** :memo: ***
+[Here](http://bit.ly/coronafightdata) you have a repository with the studies, predictions, datasets and more made
+around the world with tech and data for you to understand better how covid-19 pandemic behaves.
+Contrast the findings and don't use this to misinform.*** :pray: ***Thank you for spreading knowledge and not fear!***
+'''
+
 #st.write("[Here](https://medium.com/@myrbarnes) is how this model works.")
 
 
@@ -178,10 +191,10 @@ st.markdown("*Data is from [here](https://github.com/CSSEGISandData/COVID-19) fo
     #st.subheader(':point_up: Select the country/region on the sidebar to start.')
     
 
-if country!='This' and country!='--':
-    st.write('### :dizzy_face: *The app is suffering due to the high traffic, please, came back later* :dizzy_face:')
+#if country!='This' and country!='--':
+#    st.write('### :dizzy_face: *The app is suffering due to the high traffic, please, came back later* :dizzy_face:')
 
-elif country=='This':  
+if country!='--':  
     
     ############################################################
     # FIRST PART: actual data
@@ -259,30 +272,30 @@ you can see the distribution of *Confirmed Cases*, *Deaths* and *Recovered* peop
     chart = st.plotly_chart(fig)
     
     #get the r
-    r,days_duplicate=get_r(df,"Change Total")
-    
+    r,days_duplicate=get_r(df[df.index>=df.index.max()-dt.timedelta(days=10)],"Change Total")
+    days_duplicate=round(days_duplicate,2) if days_duplicate is not None else "Infinity"
     # Explain the chart
     controlled=(df.index.max()-df["New Cases"].idxmax()).days>=7
 
     terminar=False
-    if days_duplicate==0 or r==0 or len(df[df['New Cases']>0])<7:
+    if len(df[df['New Cases']>0])<7:
         st.write(">### There's not enough cases in *{}* to create a forecast.".format(country))
         terminar=True
     
         
     elif region=='All' and controlled:
-        st.write(">### In",country," cases are duplicating every",round(days_duplicate,2),"days with an $R_0$ of",round(r,2),
+        st.write(">### For the last 10 days in",country," cases are duplicating every",days_duplicate,"days with an $R_0$ of",round(r,2),
                  ". The peak of new cases was on",df["New Cases"].idxmax(),". From that day the virus is growing at a lower rate.")
     
     elif region=='All':
-        st.write(">### In",country," cases are duplicating every",round(days_duplicate,2),"days with an $R_0$ of",round(r,2),
+        st.write(">### For the last 10 days in",country," cases are duplicating every",days_duplicate,"days with an $R_0$ of",round(r,2),
                  ". The number of cases is still growing.")
     
     elif region!='All' and controlled:
-        st.write(">### In",region," cases are duplicating every",round(days_duplicate,2),"days with an $R_0$ of",round(r,2),
+        st.write(">### For the last 10 days in",region," cases are duplicating every",days_duplicate,"days with an $R_0$ of",round(r,2),
                  ". The peak of new cases was on",df["New Cases"].idxmax()," From that day the virus is growing at a lower rate.")
     else:
-        st.write(">### In",region," cases are duplicating every",round(days_duplicate,2),"days with an $R_0$ of",round(r,2),
+        st.write(">### For the last 10 days in",region," cases are duplicating every",days_duplicate,"days with an $R_0$ of",round(r,2),
                  ". The number of cases is still growing")
         
     ############################################################
@@ -310,13 +323,13 @@ people** infected will need hospital care, so we can forecast also the **number 
 """)
         st.write("### :cop: ...and see how they change with social distancing.")
         st.write("""To stop the uncontrolled growth some governments are encouraging the citizens to stay at home and have
-even restricted movements inside the country. This social distancing is a way to stop the virus. Below, you can **experiment with the date in which measures are enforced** to see how earlier or later enformecents affects the **healthcare system**. *Hint: it's really important to enforce them sooner rather than later!*. 
+even restricted movements inside the country. This social distancing is a way to stop the virus. Below, you can **experiment with the date in which measures are enforced** to see how earlier or later enformecents affects the **healthcare system**. 
 """)
         
         
         #parameters
         percentage_deaths=1
-        st.markdown("### :point_down: Select the date the government measures start")
+        st.markdown("### :point_down: Change the date government measures start.")# (after {} for {})".format(df[df['Confirmed']>50].index.min(),region if region!='All' else country))
         date_measures=st.date_input("Date of government measures to stop the virus: ")
         
         incubation_period=5
@@ -329,182 +342,226 @@ even restricted movements inside the country. This social distancing is a way to
         
         
         #new r
-        df2=df[df.index<date_measures]
-        r,days_duplicate=get_r(df2,"Change Total")
+        df2=df[df.index<date_measures+dt.timedelta(days=5)]
+        r,days_duplicate=get_r(df2[(df2.index>df2.index.max()-dt.timedelta(days=15))&(df2.index<=date_measures)],"Change Total")
         time_to_measure=(df2.index.max()-date_measures).days
+        #st.write(r,days_duplicate)
         
         #days to forecast
         days_prediction=100
         
-        
-        #deaths model
-        death_model=list(map(lambda x: x*1/(percentage_deaths/100),list(df2['New Deaths'])[death_delay:-1]))
-        length=len(death_model)
-        death_model=forecast_model(death_model,len(df2)-length-time_to_measure,r)
-        
-        #phase adjusted model
-        latency_model=list(df2['New Cases'])[symptom_delay:-1]
-        length=len(latency_model)
-        latency_model=forecast_model(latency_model,len(df2)-length-time_to_measure,r)
-        
-        #real new cases
-        new_cases=list(df2['New Cases'])[:-1]
-        length=len(new_cases)
-        new_cases=forecast_model(new_cases,len(df2)-length-time_to_measure+symptom_delay,r)
-        
-        #st.write(len(death_model),len(latency_model),len(new_cases))
-        
-        
-        #new deaths
-        new_deaths1=list(df2['New Deaths'])[:-1]
-        new_deaths2=[0]*death_delay+list(map(lambda x: (percentage_deaths/100)*x,death_model[:-death_delay]))
-        new_deaths=new_deaths1[:-1]+new_deaths2[len(new_deaths1)-1:]
-        
-        #new recovery for death model
-        new_recov1=list(df2['New Recovered'])[:-1]
-        new_recov2=[0]*recovery_delay+list(map(lambda x: (1-(percentage_deaths/100))*x,death_model[:-recovery_delay]))
-        new_recov=new_recov1[:-1]+new_recov2[len(new_recov1)-1:]
-        
-        #new recovery for little model
-        latency_cosa=[0]*recovery_delay+latency_model[:-recovery_delay]
-        new_recov_latency=[latency_cosa[n]-new_deaths[n] for n in range(len(latency_cosa))]
-        
-        #dates
-        fechas=list(df.index)+[df.index.max()+dt.timedelta(days=n) for n in range(days_prediction)]
-        
-        #st.write(len(death_model),len(latency_model),len(new_cases),len(new_deaths),len(new_recov),len(fechas))
-        
-        
-        
-        
-        #check the curves
-        new_df=pd.DataFrame({'death_model':death_model,
-                            'latency_model':latency_model,
-                            'new_cases':new_cases,
-                            'new_deaths':new_deaths,
-                            'new_recov':new_recov,
-                            'new_recov_lat':new_recov_latency,
-                            'date':fechas}).set_index('date').fillna(0)
+        try:
+            #deaths model
+            death_model=list(map(lambda x: x*1/(percentage_deaths/100),list(df2['New Deaths'])[death_delay:]))
+            while len(death_model)>5 and death_model[-1]<=0:
+                death_model=death_model[:-1]
+            length=len(death_model)
+            death_model=forecast_model(death_model,len(df2)-length-time_to_measure,r)
             
-        #st.line_chart(new_df)
-        
-        new_df['total_cases']=new_df['new_cases'].cumsum()
-        new_df['total_deaths']=new_df['new_deaths'].cumsum()
-        new_df['total_recovery']=new_df['new_recov_lat'].cumsum()
-        new_df['current_cases']=new_df['total_cases']-new_df['total_deaths']-new_df['total_recovery']
-        new_df['bed_needs']=new_df['current_cases']*percentage_hosp
-        
-        #st.line_chart(new_df[['total_cases','total_deaths','total_recovery']])
-        
-        #get the beds for spain
-        if country=='Spain':
-            bed_num=spain_beds[region]
-            new_df['current_beds']=bed_num
-            #st.line_chart(new_df[['current_cases','bed_needs','current_beds']])
-        
-        new_df=new_df[new_df["current_cases"]>10]
-        
-        
-        # Initialize the chart
-        fig = go.Figure()
-        # Build the first line
-        currentTrace = go.Scatter(
-            x=new_df.index[::2],
-            y=new_df['current_cases'][::2],
-            name="Predicted Cases at the Same Time",
-            line=dict(color='MediumSeaGreen'),
-            fill='tozeroy',
-            hovertemplate = # Custom tooltip
-              '<br><b>Date</b>: %{x}<br>' +
-              '<b>Cases at the same time</b>: %{y:.2s}',
-            line_shape='spline'
-              )
-        # Build the second line
-        bedTrace = go.Scatter(
-            x=new_df.index[::2], 
-            y=new_df['bed_needs'][::2],
-            name="Predicted Cases with Hospitalization Needs",
-            line=dict(color='Red'),
-            fill='tozeroy',
-            hovertemplate =
-              '<br><b>Date</b>: %{x}<br>' +
-              '<b>Patients with Hospitalization</b>: %{y:.2s} Needs',
-            line_shape='spline'
-          )
-        # Build the Today indicator
-        max_chart=max(new_df['current_cases'].max(),bed_num) if country=='Spain' else new_df['current_cases'].max()
-        todayTrace=go.Scatter(
-                x=[df.index.max(),df.index.max()],
-                y=[0,max_chart+10],
-                mode='lines',
-                line=dict(color='grey',dash='dash'),
-                name='Today')
-
-        #Build the actual beds reference for spain
-        if country=='Spain':
-            actualBedsTrace = go.Scatter(
+            #phase adjusted model
+            latency_model=list(df2['New Cases'])[symptom_delay:]
+            while len(latency_model)>5 and latency_model[-1]<=0:
+                latency_model=latency_model[:-1]
+            length=len(latency_model)
+            latency_model=forecast_model(latency_model,len(df2)-length-time_to_measure,r)
+            
+            #real new cases
+            new_cases=list(df2['New Cases'])
+            while len(new_cases)>5 and new_cases[-1]<=0:
+                new_cases=new_cases[:-1]
+            length=len(new_cases)
+            new_cases=forecast_model(new_cases,len(df2)-length-time_to_measure+symptom_delay,r)
+            
+            #st.write(len(death_model),len(latency_model),len(new_cases))
+            
+            
+            #new deaths
+            new_deaths1=list(df2['New Deaths'])
+            new_deaths2=[0]*death_delay+list(map(lambda x: (percentage_deaths/100)*x,death_model[:-death_delay]))
+            new_deaths=new_deaths1[:]+new_deaths2[len(new_deaths1):]
+            
+            #new recovery for death model
+            new_recov1=list(df2['New Recovered'])
+            new_recov2=[0]*recovery_delay+list(map(lambda x: (1-(percentage_deaths/100))*x,death_model[:-recovery_delay]))
+            new_recov=new_recov1[:]+new_recov2[len(new_recov1):]
+            
+            #new recovery for little model
+            latency_cosa=[0]*recovery_delay+latency_model[:-recovery_delay]
+            new_recov_latency=[latency_cosa[n]-new_deaths[n] for n in range(len(latency_cosa))]
+            
+            #dates
+            fechas=list(df.index)+[df.index.max()+dt.timedelta(days=n) for n in range(days_prediction)]
+            
+            #st.write(len(death_model),len(latency_model),len(new_cases),len(new_deaths),len(new_recov),len(fechas))
+            
+            #st.write(df)
+            
+            
+            #check the curves
+            new_df=pd.DataFrame({'death_model':death_model,
+                                'latency_model':latency_model,
+                                'new_cases':new_cases,
+                                'new_deaths':new_deaths,
+                                'new_recov':new_recov,
+                                'new_recov_lat':new_recov_latency,
+                                'date':fechas}).set_index('date').fillna(0)
+                
+            #st.line_chart(new_df)
+            
+            new_df['total_cases']=new_df['new_cases'].cumsum()
+            new_df['total_deaths']=new_df['new_deaths'].cumsum()
+            new_df['total_recovery']=new_df['new_recov_lat'].cumsum()
+            new_df['current_cases']=new_df['total_cases']-new_df['total_deaths']-new_df['total_recovery']
+            new_df['bed_needs']=new_df['current_cases']*percentage_hosp
+            
+            #st.line_chart(new_df[['total_cases','total_deaths','total_recovery']])
+            
+            #get the beds for spain
+            if country=='Spain':
+                bed_num=spain_beds[region]
+                new_df['current_beds']=bed_num
+                #st.line_chart(new_df[['current_cases','bed_needs','current_beds']])
+            
+            new_df=new_df[new_df["current_cases"]>10]
+            
+            
+            # Initialize the chart
+            fig = go.Figure()
+            # Build the first line
+            currentTrace = go.Scatter(
+                x=new_df.index[::2],
+                y=new_df['current_cases'][::2],
+                name="Predicted Cases at the Same Time",
+                line=dict(color='MediumSeaGreen'),
+                fill='tozeroy',
+                hovertemplate = # Custom tooltip
+                  '<br><b>Date</b>: %{x}<br>' +
+                  '<b>Cases at the same time</b>: %{y:.2s}',
+                line_shape='spline'
+                  )
+            # Build the second line
+            bedTrace = go.Scatter(
                 x=new_df.index[::2], 
-                y=new_df['current_beds'][::2],
-                name="Total Beds (Public and Private) in the Region",
-                line=dict(color='grey'),
+                y=new_df['bed_needs'][::2],
+                name="Predicted Cases with Hospitalization Needs",
+                line=dict(color='Red'),
+                fill='tozeroy',
                 hovertemplate =
                   '<br><b>Date</b>: %{x}<br>' +
-                  '<b>Bed</b>: %{y:.2s} Needs',
+                  '<b>Patients with Hospitalization</b>: %{y:.2s} Needs',
                 line_shape='spline'
               )
-        
-        # Add labels
-        fig.update_layout(
-              title="Forecast of People Infected at the Same Time",
-              xaxis_title="Time (days)",
-              yaxis_title="Nº of People Infected",
-          )
-        # Modify the legend
-        fig.update_layout(
-              legend=dict(
-                  x=0,
-                  y=-0.2,
-                  orientation="h"
-              )
-          )
-        # Activate tooltip comparison mode  
-        #fig.update_layout(hovermode='x')
-        # Add the lines to the chart
-        fig.add_trace(currentTrace)
-        fig.add_trace(bedTrace)
-        fig.add_trace(todayTrace)
-        if country=='Spain':
-            fig.add_trace(actualBedsTrace)
-        
-        
-        #write the conclusion
-        max_beds=round(new_df['bed_needs'].max())
-        max_beds=max_beds if max_beds<1000 else round(max_beds/1000)*1000
-        day_max_beds=new_df['bed_needs'].idxmax()
-        
-        if country=="Spain":
-            bed_rate=max_beds/bed_num
+            # Build the first line
+            df_plot=df[df.index>=new_df.index.min()]
+            realTrace = go.Scatter(
+                x=df_plot.index[::2],
+                y=df_plot['Current'][::2],
+                name="Current real cases",
+                line=dict(color='Blue'),
+                fill='tozeroy',
+                mode='lines',
+                hovertemplate = # Custom tooltip
+                  '<br><b>Date</b>: %{x}<br>' +
+                  '<b>Current cases at the same time</b>: %{y:.2s}',
+                line_shape='spline'
+                  )
             
-            if bed_rate>1:
-                st.write(">### The peak beds needed is ~",max_beds,
-                 ". It will occur around",day_max_beds,". That's {:0.2%} of the actual number of beds. <span style='color: red'>You will need more beds!</span>".format(bed_rate), unsafe_allow_html=True)
-            elif bed_rate>0.5:
-                st.write(">### The peak beds needed is ~",max_beds,
-                 ". It will occur around",day_max_beds,". That's {:0.2%} of the actual beds. <span style='color: green'>Great if they can all be used for COVID-19!</span>".format(bed_rate), unsafe_allow_html=True)
+            # Build the Today indicator
+            max_chart=max(new_df['current_cases'].max(),bed_num) if country=='Spain' else new_df['current_cases'].max()
+            todayTrace=go.Scatter(
+                    x=[df.index.max(),df.index.max()],
+                    y=[0,max_chart+10],
+                    mode='lines',
+                    line=dict(color='grey',dash='dash'),
+                    name='Today')
+    
+            #Build the actual beds reference for spain
+            if country=='Spain':
+                actualBedsTrace = go.Scatter(
+                    x=new_df.index[::2], 
+                    y=new_df['current_beds'][::2],
+                    name="Total Beds (Public and Private) in the Region",
+                    line=dict(color='grey'),
+                    hovertemplate =
+                      '<br><b>Date</b>: %{x}<br>' +
+                      '<b>Bed</b>: %{y:.2s} Needs',
+                    line_shape='spline'
+                  )
+            
+            # Add labels
+            fig.update_layout(
+                  title="Forecast of People Infected at the Same Time",
+                  xaxis_title="Time (days)",
+                  yaxis_title="Nº of People Infected",
+              )
+            # Modify the legend
+            fig.update_layout(
+                  legend=dict(
+                      x=0,
+                      y=-0.2,
+                      orientation="h"
+                  )
+              )
+            # Activate tooltip comparison mode  
+            #fig.update_layout(hovermode='x')
+            # Add the lines to the chart
+            fig.add_trace(currentTrace)
+            fig.add_trace(bedTrace)
+            fig.add_trace(realTrace)
+            fig.add_trace(todayTrace)
+            if country=='Spain':
+                fig.add_trace(actualBedsTrace)
+            
+            
+            
+            #write the conclusion
+            max_beds=round(new_df['bed_needs'].max())
+            max_beds=max_beds if max_beds<1000 else round(max_beds/1000)*1000
+            day_max_beds=new_df['bed_needs'].idxmax()
+            
+            days_duplicate=round(days_duplicate,2) if days_duplicate is not None else "Infinity"
+            
+            
+            if country=="Spain":
+                bed_rate=max_beds/bed_num
+                
+                if bed_rate>1:
+                    st.write(">### The peak beds needed is ~",int(max_beds),
+                     ". It will occur around",day_max_beds,". That's {:0.2%} of the actual number of beds. <span style='color: red'>You will need more beds!</span>".format(bed_rate), unsafe_allow_html=True)
+                elif bed_rate>0.5:
+                    st.write(">### The peak beds needed is ~",int(max_beds),
+                     ". It will occur around",day_max_beds,". That's {:0.2%} of the actual beds. <span style='color: green'>Great if they can all be used for COVID-19!</span>".format(bed_rate), unsafe_allow_html=True)
+                else:
+                    st.write(">### The peak beds needed is ~",int(max_beds),
+                     ". It will occur around",day_max_beds,". That's {:0.2%} of the actual beds. <span style='color: green'>This is great!</span>".format(bed_rate), unsafe_allow_html=True)
             else:
-                st.write(">### The peak beds needed is ~",max_beds,
-                 ". It will occur around",day_max_beds,". That's {:0.2%} of the actual beds. <span style='color: green'>This is great!</span>".format(bed_rate), unsafe_allow_html=True)
-        else:
-            st.write(">### The date of peak necessity will be around",day_max_beds,
-                 ". The healthcare system will need ~", max_beds," beds. Make sure there are enough :pray:!")
-
-        # Draw the chart
-        chart = st.plotly_chart(fig)
+                st.write(">### The date of peak necessity will be around",day_max_beds,
+                     ". The healthcare system will need ~", int(max_beds)," beds. Make sure there are enough :pray:!")
+            
+            st.write("*During the 10 days before",date_measures,"the cases duplicated every", days_duplicate,"days.*")
+            # Draw the chart
+            chart = st.plotly_chart(fig)
+            
+            
+        except:
+            st.write("### :warning: There's not enough data before that date to create a forecast, select other :warning:")
             
         # Warning
         st.write(""">:warning: *Note: Forecasting the covid pandemic is a complex problem. Although this model uses real data, assumptions made to forecast are based on Hubei (China) case and do not necessarily
 match the reality for any other country. Take this as an experiment to see how little variations in time can change a lot the scenario for the health system. Don't forget to follow your local
 government health and safety regulations!*""")
+        
+        st.write("""### :question: FAQ
+- **Why sometimes it grows so high?**
+
+The higher $$R_{0}$$, the faster the growth. For early phases of the data the changes are usually higher because it is easier to grow from 1 to 2 than to 1000 to 2000 in one day.
+It's also possible to do 4 test and get 2 positive, than to do 40000 to get 20000 positives in one day. Data is constrained also with by the number of tests done.
+        
+- **It's better to start social distancing earlier than later. Why in some cases this doesn't happen in this model?** 
+
+For forecasting purposes the $$R_{0}$$ used is the one 10 days before measures start. This lead to little changes in the data that can change completely the model.
+
+                 """)
         
         
         # Bibliography
