@@ -36,9 +36,9 @@ def improve_data(world,spain):
     spain.columns=list(spain.columns[:2])+[dt.datetime.strptime(date,"%Y-%m-%d").strftime("%d/%m/%Y") for date in spain.columns[2:]]
     
     
-    selected_countries=list(world.loc[world['Province/State']!='All','Country/Region'].sort_values().unique())
+    countries=list(world['Country/Region'].sort_values().unique())
     
-    for country in selected_countries:
+    for country in countries:
         if len(world.loc[world['Country/Region']==country,'Province/State'].sort_values().unique()) == 1:
             world.loc[world['Country/Region']==country,'Province/State']=world.loc[world['Country/Region']==country,'Province/State'].fillna('All')
         else:
