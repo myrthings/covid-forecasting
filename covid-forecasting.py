@@ -28,7 +28,11 @@ spain_beds={'Andalucía':21349,
 
 #function to concatenate world and spanish data
 def improve_data(world,spain):
-    world.columns=list(world.columns[:4])+[dt.datetime.strptime(date,"%m/%d/%y").strftime("%d/%m/%Y") for date in world.columns[4:]]
+    try:
+        world.columns=list(world.columns[:4])+[dt.datetime.strptime(date,"%m/%d/%y").strftime("%d/%m/%Y") for date in world.columns[4:]]
+    except:
+        world.columns=list(world.columns[:4])+[dt.datetime.strptime(date,"%m/%d/%Y").strftime("%d/%m/%Y") for date in world.columns[4:]]
+
     spain.columns=list(spain.columns[:2])+[dt.datetime.strptime(date,"%Y-%m-%d").strftime("%d/%m/%Y") for date in spain.columns[2:]]
     
     
@@ -154,9 +158,9 @@ Contrast the findings and don't use this to misinform.*** :pray: ***Thank you fo
 
 
 #get the world data
-wconfirmed=pd.read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-Confirmed.csv",error_bad_lines=False)
-wdeaths=pd.read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-Deaths.csv",error_bad_lines=False)
-wrecovered=pd.read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-Recovered.csv",error_bad_lines=False)
+wconfirmed=pd.read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv",error_bad_lines=False)
+wdeaths=pd.read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv",error_bad_lines=False)
+wrecovered=pd.read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_recovered_global.csv",error_bad_lines=False)
 
 #get the spanish data
 spconfirmed=pd.read_csv('https://raw.githubusercontent.com/datadista/datasets/master/COVID%2019/ccaa_covid19_casos.csv')
