@@ -36,14 +36,17 @@ def improve_data(world,spain):
     spain.columns=list(spain.columns[:2])+[dt.datetime.strptime(date,"%Y-%m-%d").strftime("%d/%m/%Y") for date in spain.columns[2:]]
     
     
-    world['Province/State']=world['Province/State'].fillna('All')
-    selected_countries=list(world.loc[world['Province/State']!='All','Country/Region'].sort_values().unique())
+    countries=list(world['Country/Region'].sort_values().unique())
     
-    for country in selected_countries:
-        all_data=pd.DataFrame(world[world['Country/Region']==country].iloc[:,5:].sum()).T
-        all_data['Province/State']='All'
-        all_data['Country/Region']=country
-        world=pd.concat([world,all_data],axis=0)
+    for country in countries:
+        if len(world.loc[world['Country/Region']==country,'Province/State'].sort_values().unique()) == 1:
+            world.loc[world['Country/Region']==country,'Province/State']=world.loc[world['Country/Region']==country,'Province/State'].fillna('All')
+        else:
+            world.loc[world['Country/Region']==country,'Province/State']=world.loc[world['Country/Region']==country,'Province/State'].fillna('Other')
+            all_data=pd.DataFrame(world[world['Country/Region']==country].iloc[:,5:].sum()).T
+            all_data['Province/State']='All'
+            all_data['Country/Region']=country
+            world=pd.concat([world,all_data],axis=0)
         
     
     spain=spain.rename(columns={'CCAA':'Province/State'}).drop('cod_ine',axis=1)[:19]
