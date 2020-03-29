@@ -1,7 +1,9 @@
 # COVID-19: Calculate the danger of a sanitary collapse :ambulance: :hospital:
 This respository is the code of [this app](https://covid-forecasting.herokuapp.com/). It forecast the impact of social distancing to stop the spread of the virus COVID-19 in different countries and how much it affects the sanitary system.
 
-![](gif-covid.gif)
+<p align="center"> 
+<img src="gif-covid.gif">
+</p>
 
 ## Context
 In December 2019 the first cases of COVID-19 or SARS-COV-2 appeared in the city of Wuhan in the state of Hubei in China. Since that day the disease start to spread every day faster and further than the day before. The 23 of June government authorities locked down the region (size of France, for europeans to compare) with just 300 cases diagnosed. The number of cases rised for more than a week due to the incubation period of the desease, but then, started to fall. On March, the disease "curved" in Wuhan and they started to control the cases, the city is expected to open again in April.
