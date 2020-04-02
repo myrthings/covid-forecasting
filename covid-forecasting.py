@@ -159,22 +159,27 @@ Contrast the findings and don't use this to misinform.*** :pray: ***Thank you fo
 
 #st.write("[Here](https://medium.com/@myrbarnes) is how this model works.")
 
+# Cache for a day
+@st.cache(ttl=3600*24, show_spinner=False)
+def load_data():
+    #get the world data
+    wconfirmed=pd.read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv",error_bad_lines=False)
+    wdeaths=pd.read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv",error_bad_lines=False)
+    wrecovered=pd.read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_recovered_global.csv",error_bad_lines=False)
 
-#get the world data
-wconfirmed=pd.read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv",error_bad_lines=False)
-wdeaths=pd.read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv",error_bad_lines=False)
-wrecovered=pd.read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_recovered_global.csv",error_bad_lines=False)
-
-#get the spanish data
-spconfirmed=pd.read_csv('https://raw.githubusercontent.com/datadista/datasets/master/COVID%2019/ccaa_covid19_casos.csv')
-spdeaths=pd.read_csv('https://raw.githubusercontent.com/datadista/datasets/master/COVID%2019/ccaa_covid19_fallecidos.csv')
-sprecovered=pd.read_csv('https://raw.githubusercontent.com/datadista/datasets/master/COVID%2019/ccaa_covid19_altas.csv')
+    #get the spanish data
+    spconfirmed=pd.read_csv('https://raw.githubusercontent.com/datadista/datasets/master/COVID%2019/ccaa_covid19_casos.csv')
+    spdeaths=pd.read_csv('https://raw.githubusercontent.com/datadista/datasets/master/COVID%2019/ccaa_covid19_fallecidos.csv')
+    sprecovered=pd.read_csv('https://raw.githubusercontent.com/datadista/datasets/master/COVID%2019/ccaa_covid19_altas.csv')
 
 
-#improve world data and add spanish data
-confirmed=improve_data(wconfirmed,spconfirmed).fillna(0)
-deaths=improve_data(wdeaths,spdeaths).fillna(0)
-recovered=improve_data(wrecovered,sprecovered).fillna(0)
+    #improve world data and add spanish data
+    confirmed=improve_data(wconfirmed,spconfirmed).fillna(0)
+    deaths=improve_data(wdeaths,spdeaths).fillna(0)
+    recovered=improve_data(wrecovered,sprecovered).fillna(0)
+    return confirmed, deaths, recovered
+
+confirmed, deaths, recovered = load_data()
 
 
 #sidebar
