@@ -17,3 +17,4 @@ The impact of the lockdown was studied as it was happening and some of the resul
 ## Version 👩‍💻
 - **V.1:** First version. The user can change the region on a sidebar and then the date of the government measures in the body.
 - **V.2:** Deleted the sidebar because of problems when a lot of traffic running on Heroku.
+- **V.3:** Update Streamlit to version 57. Caching for data load. Sidebar returned.
