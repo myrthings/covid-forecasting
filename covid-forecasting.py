@@ -212,30 +212,30 @@ confirmed, deaths, recovered = load_data()
 
 
 #sidebar
-#st.sidebar.markdown("## Select the region of the world :globe_with_meridians: to study :microscope:")
-#country=st.sidebar.selectbox("Country/Region: ",['--']+list(confirmed['Country/Region'].sort_values().unique()))
-#region=st.sidebar.selectbox("Province/State: ",confirmed.loc[confirmed['Country/Region']==country,'Province/State'].sort_values().unique() if country!='--' else ['--'])
-#st.sidebar.markdown("Data is from [here](https://github.com/CSSEGISandData/COVID-19) for the World and from [here](https://github.com/datadista/datasets/tree/master/COVID%2019) for Spain.")
+st.sidebar.markdown("## Select the region of the world :globe_with_meridians: to study :microscope:")
+country=st.sidebar.selectbox("Country/Region: ",['--']+list(confirmed['Country/Region'].sort_values().unique()))
+region=st.sidebar.selectbox("Province/State: ",confirmed.loc[confirmed['Country/Region']==country,'Province/State'].sort_values().unique() if country!='--' else ['--'])
+st.sidebar.markdown("Data is from [here](https://github.com/CSSEGISandData/COVID-19) for the World and from [here](https://github.com/datadista/datasets/tree/master/COVID%2019) for Spain.")
 
 #no sidebar
-st.markdown("## :point_down: Select the region of the world to study")
-country=st.selectbox("Country/Region: ",['--']+list(confirmed['Country/Region'].sort_values().unique()))
-region=st.selectbox("Province/State: ",confirmed.loc[confirmed['Country/Region']==country,'Province/State'].sort_values().unique() if country!='--' else ['--'])
-st.markdown("*Data is from [here](https://github.com/CSSEGISandData/COVID-19) for the World and from [here](https://github.com/datadista/datasets/tree/master/COVID%2019) for Spain.*")
+#st.markdown("## :point_down: Select the region of the world to study")
+#country=st.selectbox("Country/Region: ",['--']+list(confirmed['Country/Region'].sort_values().unique()))
+#region=st.selectbox("Province/State: ",confirmed.loc[confirmed['Country/Region']==country,'Province/State'].sort_values().unique() if country!='--' else ['--'])
+#st.markdown("*Data is from [here](https://github.com/CSSEGISandData/COVID-19) for the World and from [here](https://github.com/datadista/datasets/tree/master/COVID%2019) for Spain.*")
 
 
 
 #body of the study    
-#if country=='--':
+if country=='--':
     # st.write(':point_left: **Select the country/region on the sidebar to start.**')
-    #st.subheader(':point_left: Select the country/region on the sidebar to start.')
+    st.subheader(':point_left: Select the country/region on the sidebar to start.')
     #st.subheader(':point_up: Select the country/region on the sidebar to start.')
     
 
 #if country!='This' and country!='--':
 #    st.write('### :dizzy_face: *The app is suffering due to the high traffic, please, came back later* :dizzy_face:')
 
-if country!='--':  
+elif country!='--':  
     
     ############################################################
     # FIRST PART: actual data
