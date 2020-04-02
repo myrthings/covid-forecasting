@@ -26,8 +26,15 @@ spain_beds={'Andalucía':21349,
             'La Rioja':1050,
             'All':158292}
 
+
+
 #function to concatenate world and spanish data
 def improve_data(world,spain):
+    '''
+    Goal: improve the quality of the data
+    Input: global data of world and spain
+    Output: df with the mix and cleaner
+    '''
     try:
         world.columns=list(world.columns[:4])+[dt.datetime.strptime(date,"%m/%d/%y").strftime("%d/%m/%Y") for date in world.columns[4:]]
     except:
@@ -55,9 +62,40 @@ def improve_data(world,spain):
     new=pd.concat([world,spain],axis=0).drop(['Lat','Long'],axis=1).reset_index(drop=True)
     
     return new
-    
+
+# Cache for a day
+@st.cache(ttl=3600*24, show_spinner=False)
+def load_data():
+    '''
+    Goal: read the data for the app.
+    Input: None
+    Output: confirmed, deaths and recovered datasets and cleaned
+    '''
+    #get the world data
+    wconfirmed=pd.read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv",error_bad_lines=False)
+    wdeaths=pd.read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv",error_bad_lines=False)
+    wrecovered=pd.read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_recovered_global.csv",error_bad_lines=False)
+
+    #get the spanish data
+    spconfirmed=pd.read_csv('https://raw.githubusercontent.com/datadista/datasets/master/COVID%2019/ccaa_covid19_casos.csv')
+    spdeaths=pd.read_csv('https://raw.githubusercontent.com/datadista/datasets/master/COVID%2019/ccaa_covid19_fallecidos.csv')
+    sprecovered=pd.read_csv('https://raw.githubusercontent.com/datadista/datasets/master/COVID%2019/ccaa_covid19_altas.csv')
+
+
+    #improve world data and add spanish data
+    confirmed=improve_data(wconfirmed,spconfirmed).fillna(0)
+    deaths=improve_data(wdeaths,spdeaths).fillna(0)
+    recovered=improve_data(wrecovered,sprecovered).fillna(0)
+    return confirmed, deaths, recovered    
+
+
 #function to separate the region you want to analize
 def separate_region(country,region):
+    '''
+    Goal: get only the region wanted and prepare it
+    Input: country and region parameters
+    Output: dataframe with only that region choosen
+    '''
 
     data=pd.concat([confirmed[(confirmed['Country/Region']==country) & (confirmed['Province/State']==region)],
                       deaths[(deaths['Country/Region']==country) & (deaths['Province/State']==region)],
@@ -83,6 +121,11 @@ def separate_region(country,region):
 
 #function to get the r of a given region
 def get_r(data,column):
+    '''
+    Goal: get r for the data
+    Input: the dataframe and the column choosen to get r
+    Output: the value of r and the days to duplicate
+    '''
     line=data.loc[(data[column]>0)&(data[column]!=data[column].max()),column]
     #r=min(line.median(),line.mean())
     r=line.mean()
@@ -97,6 +140,11 @@ def get_r(data,column):
 
 #function for forecasting data
 def forecast_model(model,trozo,r):
+    '''
+    Goal: forecast data given a number of days and r using Hubei Assumptions
+    Input: model: list to forecast, trozo: number of days to forecast, r: reproduction number
+    Output: the new list forecasted
+    '''
     length=len(model)
     #trozo=trozo1
     if trozo>0:
@@ -160,21 +208,7 @@ Contrast the findings and don't use this to misinform.*** :pray: ***Thank you fo
 #st.write("[Here](https://medium.com/@myrbarnes) is how this model works.")
 
 
-#get the world data
-wconfirmed=pd.read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv",error_bad_lines=False)
-wdeaths=pd.read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv",error_bad_lines=False)
-wrecovered=pd.read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_recovered_global.csv",error_bad_lines=False)
-
-#get the spanish data
-spconfirmed=pd.read_csv('https://raw.githubusercontent.com/datadista/datasets/master/COVID%2019/ccaa_covid19_casos.csv')
-spdeaths=pd.read_csv('https://raw.githubusercontent.com/datadista/datasets/master/COVID%2019/ccaa_covid19_fallecidos.csv')
-sprecovered=pd.read_csv('https://raw.githubusercontent.com/datadista/datasets/master/COVID%2019/ccaa_covid19_altas.csv')
-
-
-#improve world data and add spanish data
-confirmed=improve_data(wconfirmed,spconfirmed).fillna(0)
-deaths=improve_data(wdeaths,spdeaths).fillna(0)
-recovered=improve_data(wrecovered,sprecovered).fillna(0)
+confirmed, deaths, recovered = load_data()
 
 
 #sidebar
