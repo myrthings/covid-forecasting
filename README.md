@@ -1,4 +1,6 @@
 # COVID-19: Calculate the danger of a healthcare collapse :ambulance: :hospital:
+## ⚠️ **This app is no longer working ⚠️
+
 This respository is the code for [this app](https://covid-forecasting.herokuapp.com/). It forecasts the impact of social distancing to stop the spread of the COVID-19 virus in different countries, and how much it affects the healthcare system.
 
 <p align="center"> 
